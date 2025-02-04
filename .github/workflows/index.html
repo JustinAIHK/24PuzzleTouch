@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>24 Puzzle Game</title>
+  <style>
+    .puzzle-container {
+      max-width: 600px;
+      margin: 0 auto;
+      text-align: center;
+    }
+    .puzzle-cell {
+      background: #0073aa;
+      color: white;
+      width: 50px;
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 4px;
+      font-weight: bold;
+      touch-action: manipulation;
+      cursor: pointer;
+    }
+    .puzzle-cell.empty {
+      background: #f0f0f1;
+      cursor: default;
+    }
+    .controls button {
+      padding: 10px 20px;
+      background: #0073aa;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin: 5px;
+    }
+    .controls button#auto-sort-btn {
+      background: #28a745;
+    }
+    .controls button#reset-btn {
+      background: #dc3545;
+    }
+    #game-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 50px);
+      gap: 5px;
+      margin: 20px auto;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="puzzle-container">
+    <h2 style="color: #333;">24 Puzzle Game</h2>
+    <div id="game-grid"></div>
+    <div class="controls">
+      <button id="start-btn">Start Game</button>
+      <button id="auto-sort-btn">Auto Sort</button>
+      <button id="reset-btn" style="display: none;">Reset Game (R)</button>
+    </div>
+    <div style="text-align: center; margin-top: 15px;">
+      Time: <span id="game-timer">00:00</span>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      let grid = [],
+        emptyRow = 4,
+        emptyCol = 4,
+        timerInterval,
+        startTime,
+        isAutoSorting = false;
+      let initialGrid = [];
+      let initialEmptyRow, initialEmptyCol;
+      let shuffleMoves = [];
+
+      function initGame() {
+        grid = [];
+        let num = 1;
+        for (let i = 0; i < 5; i++) {
+          let row = [];
+          for (let j = 0; j < 5; j++) {
+            row.push((i === 4 && j === 4) ? 0 : num++);
+          }
+          grid.push(row);
+        }
+        emptyRow = 4;
+        emptyCol = 4;
+        shuffleGrid();
+        initialGrid = JSON.parse(JSON.stringify(grid));
+        initialEmptyRow = emptyRow;
+        initialEmptyCol = emptyCol;
+        renderGrid(true);
+      }
+
+      function shuffleGrid() {
+        shuffleMoves = [];
+        const directions = ['w', 's', 'a', 'd'];
+        let validMoves = 0;
+        while (validMoves < 100) {
+          const dir = directions[Math.floor(Math.random() * directions.length)];
+          if (move(dir, true)) {
+            shuffleMoves.push(dir);
+            validMoves++;
+          }
+        }
+      }
+
+      function move(dir, isShuffling = false) {
+        let newRow = emptyRow;
+        let newCol = emptyCol;
+        if (dir === 'w' && emptyRow < 4) newRow++;
+        else if (dir === 's' && emptyRow > 0) newRow--;
+        else if (dir === 'a' && emptyCol < 4) newCol++;
+        else if (dir === 'd' && emptyCol > 0) newCol--;
+
+        if (newRow !== emptyRow || newCol !== emptyCol) {
+          grid[emptyRow][emptyCol] = grid[newRow][newCol];
+          grid[newRow][newCol] = 0;
+          emptyRow = newRow;
+          emptyCol = newCol;
+          renderGrid();
+          
+          if (!isShuffling && checkWin() && !isAutoSorting) {
+            clearInterval(timerInterval);
+            alert(`Congratulations! You solved the puzzle in ${document.getElementById('game-timer').textContent}!`);
+          }
+          return true;
+        }
+        return false;
+      }
+
+      function renderGrid(hideNumbers = false) {
+        const gridElement = document.getElementById('game-grid');
+        gridElement.innerHTML = '';
+        for (let i = 0; i < 5; i++) {
+          for (let j = 0; j < 5; j++) {
+            const cell = document.createElement('div');
+            cell.className = `puzzle-cell ${grid[i][j] === 0 ? 'empty' : ''}`;
+            cell.textContent = (hideNumbers && grid[i][j] !== 0) ? '' : grid[i][j];
+            
+            // Add position data and click handlers
+            if (grid[i][j] !== 0) {
+              cell.dataset.row = i;
+              cell.dataset.col = j;
+              cell.addEventListener('click', handleTap);
+              cell.addEventListener('touchstart', handleTap);
+            }
+            
+            gridElement.appendChild(cell);
+          }
+        }
+      }
+
+      function handleTap(e) {
+        e.preventDefault();
+        if (isAutoSorting) return;
+        
+        const row = parseInt(e.target.dataset.row);
+        const col = parseInt(e.target.dataset.col);
+        
+        // Check if adjacent to empty cell
+        const isAdjacent = (
+          (Math.abs(row - emptyRow) === 1 && col === emptyCol) ||
+          (Math.abs(col - emptyCol) === 1 && row === emptyRow)
+        );
+
+        if (isAdjacent) {
+          let direction = '';
+          if (row === emptyRow - 1) direction = 's'; // Tile below empty cell
+          else if (row === emptyRow + 1) direction = 'w'; // Tile above empty cell
+          else if (col === emptyCol - 1) direction = 'd'; // Tile right of empty cell
+          else if (col === emptyCol + 1) direction = 'a'; // Tile left of empty cell
+          
+          if (direction) move(direction);
+        }
+      }
+
+      function checkWin() {
+        let num = 1;
+        for (let i = 0; i < 5; i++) {
+          for (let j = 0; j < 5; j++) {
+            if (i === 4 && j === 4) {
+              if (grid[i][j] !== 0) return false;
+            } else {
+              if (grid[i][j] !== num++) return false;
+            }
+          }
+        }
+        return true;
+      }
+
+      function updateTimer() {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const mins = Math.floor(elapsed / 60);
+        const secs = elapsed % 60;
+        document.getElementById('game-timer').textContent = 
+          `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+      }
+
+      function autoSort() {
+        if (isAutoSorting) return;
+        isAutoSorting = true;
+        document.getElementById('auto-sort-btn').disabled = true;
+        document.getElementById('reset-btn').style.display = 'none';
+
+        const solveSequence = [...shuffleMoves].reverse().map(move => {
+          const reverseMoves = { 'w': 's', 's': 'w', 'a': 'd', 'd': 'a' };
+          return reverseMoves[move];
+        });
+
+        let step = 0;
+        const interval = setInterval(() => {
+          if (step >= solveSequence.length) {
+            clearInterval(interval);
+            isAutoSorting = false;
+            document.getElementById('auto-sort-btn').disabled = false;
+            document.getElementById('reset-btn').style.display = 'inline-block';
+            clearInterval(timerInterval);
+            if (checkWin()) {
+              alert(`Puzzle auto-solved in ${document.getElementById('game-timer').textContent}!`);
+            }
+            return;
+          }
+          move(solveSequence[step]);
+          step++;
+        }, 200);
+      }
+
+      function resetGame() {
+        clearInterval(timerInterval);
+        initGame();
+        document.getElementById('game-timer').textContent = '00:00';
+        document.getElementById('start-btn').style.display = 'inline-block';
+        document.getElementById('auto-sort-btn').style.display = 'inline-block';
+        document.getElementById('reset-btn').style.display = 'none';
+      }
+
+      function startGame() {
+        startTime = Date.now();
+        timerInterval = setInterval(updateTimer, 1000);
+        document.getElementById('start-btn').style.display = 'none';
+        document.getElementById('auto-sort-btn').style.display = 'none';
+        document.getElementById('reset-btn').style.display = 'inline-block';
+        renderGrid();
+      }
+
+      // Event listeners
+      document.getElementById('start-btn').addEventListener('click', startGame);
+      document.getElementById('auto-sort-btn').addEventListener('click', () => {
+        startGame();
+        autoSort();
+      });
+      document.getElementById('reset-btn').addEventListener('click', resetGame);
+
+      document.addEventListener('keydown', (e) => {
+        const key = e.key.toLowerCase();
+        if (['w', 'a', 's', 'd'].includes(key)) {
+          move(key);
+        } else if (key === 'r') {
+          resetGame();
+        }
+      });
+
+      initGame();
+    });
+  </script>
+</body>
+</html>
