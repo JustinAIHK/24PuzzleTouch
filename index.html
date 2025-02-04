@@ -5,13 +5,16 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>24 Puzzle Game</title>
   <style>
+    body {
+      font-family: sans-serif; /* Apply sans font globally */
+    }
     .puzzle-container {
       max-width: 600px;
       margin: 0 auto;
       text-align: center;
     }
     .puzzle-cell {
-      background: #0073aa;
+      background: #f56042; /* Numbered cell background color */
       color: white;
       width: 50px;
       height: 50px;
@@ -24,7 +27,7 @@
       cursor: pointer;
     }
     .puzzle-cell.empty {
-      background: #f0f0f1;
+      background: white; /* Empty cell background color */
       cursor: default;
     }
     .controls button {
@@ -34,6 +37,7 @@
       border: none;
       cursor: pointer;
       margin: 5px;
+      font-family: sans-serif; /* Apply sans font to buttons */
     }
     .controls button#auto-sort-btn {
       background: #28a745;
@@ -47,6 +51,12 @@
       gap: 5px;
       margin: 20px auto;
       justify-content: center;
+    }
+    #game-timer {
+      font-family: sans-serif; /* Apply sans font to timer */
+    }
+    h2 {
+      font-family: sans-serif; /* Apply sans font to heading */
     }
   </style>
 </head>
@@ -99,7 +109,7 @@
         shuffleMoves = [];
         const directions = ['w', 's', 'a', 'd'];
         let validMoves = 0;
-        while (validMoves < 100) {
+        while (validMoves < 200) {
           const dir = directions[Math.floor(Math.random() * directions.length)];
           if (move(dir, true)) {
             shuffleMoves.push(dir);
@@ -141,7 +151,6 @@
             cell.className = `puzzle-cell ${grid[i][j] === 0 ? 'empty' : ''}`;
             cell.textContent = (hideNumbers && grid[i][j] !== 0) ? '' : grid[i][j];
             
-            // Add position data and click handlers
             if (grid[i][j] !== 0) {
               cell.dataset.row = i;
               cell.dataset.col = j;
@@ -161,7 +170,6 @@
         const row = parseInt(e.target.dataset.row);
         const col = parseInt(e.target.dataset.col);
         
-        // Check if adjacent to empty cell
         const isAdjacent = (
           (Math.abs(row - emptyRow) === 1 && col === emptyCol) ||
           (Math.abs(col - emptyCol) === 1 && row === emptyRow)
@@ -169,10 +177,10 @@
 
         if (isAdjacent) {
           let direction = '';
-          if (row === emptyRow - 1) direction = 's'; // Tile below empty cell
-          else if (row === emptyRow + 1) direction = 'w'; // Tile above empty cell
-          else if (col === emptyCol - 1) direction = 'd'; // Tile right of empty cell
-          else if (col === emptyCol + 1) direction = 'a'; // Tile left of empty cell
+          if (row === emptyRow - 1) direction = 's';
+          else if (row === emptyRow + 1) direction = 'w';
+          else if (col === emptyCol - 1) direction = 'd';
+          else if (col === emptyCol + 1) direction = 'a';
           
           if (direction) move(direction);
         }
